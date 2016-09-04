@@ -7,6 +7,7 @@ import (
 
 // Rule for filter
 type Rule struct {
+	To      string
 	From    string
 	Subject string
 	Channel string
@@ -17,6 +18,7 @@ type Filter []*Rule
 
 // Fix remove spaces and convert to lower case the rules
 func (r *Rule) Fix() {
+	r.To = strings.TrimSpace(strings.ToLower(r.To))
 	r.From = strings.TrimSpace(strings.ToLower(r.From))
 	r.Subject = strings.TrimSpace(strings.ToLower(r.Subject))
 	r.Channel = strings.TrimSpace(strings.ToLower(r.Channel))
@@ -24,8 +26,8 @@ func (r *Rule) Fix() {
 
 // IsValid check if this rule is valid
 func (r *Rule) IsValid() error {
-	if len(r.From) == 0 && len(r.Subject) == 0 {
-		return fmt.Errorf("Need to set From or Subject")
+	if len(r.From) == 0 && len(r.Subject) == 0 && len(r.To) == 0 {
+		return fmt.Errorf("Need to set From or Subject or To")
 	}
 
 	if len(r.Channel) == 0 {
@@ -54,15 +56,23 @@ func (r *Rule) meetsSubject(subject string) bool {
 	return strings.Contains(subject, r.Subject)
 }
 
+func (r *Rule) meetsTo(to string) bool {
+	to = strings.ToLower(to)
+	if len(r.To) == 0 {
+		return true
+	}
+	return strings.Contains(to, r.To)
+}
+
 // MeetsRule check if from and subject meets this rule
-func (r *Rule) MeetsRule(from, subject string) bool {
-	return r.meetsFrom(from) && r.meetsSubject(subject)
+func (r *Rule) MeetsRule(from, to, subject string) bool {
+	return r.meetsFrom(from) && r.meetsSubject(subject) && r.meetsTo(to)
 }
 
 // GetChannel return the first channel with attempt the rules
-func (f *Filter) GetChannel(from, subject string) string {
+func (f *Filter) GetChannel(from, to, subject string) string {
 	for _, r := range *f {
-		if r.MeetsRule(from, subject) {
+		if r.MeetsRule(from, to, subject) {
 			return r.Channel
 		}
 	}

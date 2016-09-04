@@ -241,7 +241,7 @@ func (m *MatterMail) postMessage(client *model.Client, channelID string, message
 }
 
 // PostFile Post files and message in Mattermost server
-func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbody *string, attach *[]enmime.MIMEPart) error {
+func (m *MatterMail) PostFile(from, to, subject, message, emailname string, emailbody *string, attach *[]enmime.MIMEPart) error {
 
 	client := model.NewClient(m.cfg.Server)
 
@@ -290,7 +290,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 	// check filters
 	if channelID == "" && m.cfg.Filter != nil {
 		m.debg.Println("Did not find channel/user from Email Subject. Look for filter")
-		channelName = m.cfg.Filter.GetChannel(from, subject)
+		channelName = m.cfg.Filter.GetChannel(from, to, subject)
 		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
@@ -583,9 +583,10 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 
 	subject := mime.GetHeader("Subject")
 	from := NonASCII(msg.Header.Get("From"))
+	to := NonASCII(msg.Header.Get("To"))
 	message := fmt.Sprintf(m.cfg.MailTemplate, from, subject, partmessage)
 
-	return m.PostFile(from, subject, message, emailname, &emailbody, &mime.Attachments)
+	return m.PostFile(from, to, subject, message, emailname, &emailbody, &mime.Attachments)
 }
 
 type devNull int
